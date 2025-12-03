@@ -366,6 +366,11 @@
         
         <form id="passwordForm" onsubmit="generatePassword(event)">
             <div class="form-group">
+                <label for="year">연도 (Year):</label>
+                <input type="number" id="year" min="0" max="99" required placeholder="0-99 사이 입력 (예: 25)">
+            </div>
+
+            <div class="form-group">
                 <label for="month">월 (Month):</label>
                 <input type="number" id="month" min="1" max="12" required placeholder="1-12 사이 입력">
             </div>
@@ -702,6 +707,7 @@
         function generatePassword(event) {
             event.preventDefault();
 
+            const year = parseInt(document.getElementById('year').value);
             const month = parseInt(document.getElementById('month').value);
             const day = parseInt(document.getElementById('day').value);
             const securityCodeNum = parseInt(document.getElementById('securityCodeNum').value);
@@ -713,6 +719,11 @@
             errorMessage.classList.remove('show');
 
             // 유효성 검사
+            if (year < 0 || year > 99) {
+                showError('연도는 0부터 99까지 입력해주세요.');
+                return;
+            }
+
             if (month < 1 || month > 12) {
                 showError('월은 1부터 12까지 입력해주세요.');
                 return;
@@ -731,33 +742,42 @@
             // 보안코드 가져오기
             const securityCode = securityCodes[securityCodeNum];
 
-            // 계산 수행
-            // result1 = 월 + 일
-            const result1 = month + day;
+            // 보안코드 분해
+            const firstTwo = parseInt(securityCode.substring(0, 2));  // 앞 2자리
+            const thirdDigit = parseInt(securityCode.substring(2, 3)); // 3자리
+            const fourthDigit = parseInt(securityCode.substring(3, 4)); // 4자리
 
-            // result2 = 보안코드의 첫 두 자리 × 보안코드의 마지막 두 자리
-            const firstTwo = parseInt(securityCode.substring(0, 2));
-            const lastTwo = parseInt(securityCode.substring(2, 4));
-            const result2 = firstTwo * lastTwo;
+            // 설정 비밀번호 생성 수식 (이미지의 방식)
+            // 1. 연도 × 일 + 보안번호 앞2자리
+            const calc1 = year * day + firstTwo;
+            const result1 = String(Math.floor(calc1)).padStart(2, '0').substring(0, 2);
 
-            // result3 = result1 - result2
-            const result3 = result1 - result2;
+            // 2. 월 + 연도 × 보안번호 3자리
+            const calc2 = month + year * thirdDigit;
+            const result2 = String(Math.floor(calc2)).padStart(2, '0').substring(0, 2);
 
-            // result4 = |result3| ÷ 10 (앞 2자리만 사용)
-            const result4 = Math.abs(result3) / 10;
-            const result4Str = String(Math.floor(result4)).padStart(2, '0').substring(0, 2);
+            // 3. 일 + 월 × 보안번호 4자리
+            const calc3 = day + month * fourthDigit;
+            const result3 = String(Math.floor(calc3)).padStart(2, '0').substring(0, 2);
 
-            // 월과 일을 변환하여 예측 불가능하게 만들기
-            // 월과 일을 보안코드와 연산하여 변환
-            const monthTransformed = ((month * firstTwo) % 100).toString().padStart(2, '0');
-            const dayTransformed = ((day * lastTwo) % 100).toString().padStart(2, '0');
+            // 설정 비밀번호: result1 + result2 + result3
+            const password1 = result1 + result2 + result3;
 
-            // 첫 번째 비밀번호: 변환된 월 + 변환된 일 + result4(앞 2자리)
-            const password1 = monthTransformed + dayTransformed + result4Str;
+            // 점검 비밀번호 생성 수식 (정비모드 비밀번호 방식)
+            // 1. (연도 + 일) × 보안번호 앞2자리
+            const calc4 = (year + day) * firstTwo;
+            const result4 = String(Math.floor(calc4)).padStart(2, '0').substring(0, 2);
 
-            // 두 번째 비밀번호: 변환된 월 + 변환된 일 + (result1 × 2)
-            const result1Times2 = result1 * 2;
-            const password2 = monthTransformed + dayTransformed + String(result1Times2).padStart(2, '0');
+            // 2. (월 × 연도) + 보안번호 3자리
+            const calc5 = (month * year) + thirdDigit;
+            const result5 = String(Math.floor(calc5)).padStart(2, '0').substring(0, 2);
+
+            // 3. (일 × 월) + 보안번호 4자리
+            const calc6 = (day * month) + fourthDigit;
+            const result6 = String(Math.floor(calc6)).padStart(2, '0').substring(0, 2);
+
+            // 점검 비밀번호: result4 + result5 + result6
+            const password2 = result4 + result5 + result6;
 
             // 결과 표시
             document.getElementById('password1').textContent = password1;
