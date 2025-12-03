@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>진우에스엠씨AML</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+
+        h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        input[type="number"],
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="number"]:focus,
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 20px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            margin-top: 10px;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+            box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4);
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            padding: 8px 15px;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .result-container {
+            margin-top: 25px;
+            display: none;
+        }
+
+        .result-container.show {
+            display: block;
+        }
+
+        .result-item {
+            background: #f5f5f5;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+
+        .result-label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .password-text {
+            font-family: 'Courier New', monospace;
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            word-break: break-all;
+            margin-bottom: 10px;
+        }
+
+        .copy-btn {
+            padding: 8px 15px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.2s;
+        }
+
+        .copy-btn:hover {
+            background: #5568d3;
+        }
+
+        .copy-btn.copied {
+            background: #4caf50;
+        }
+
+        .calculation {
+            background: #f9f9f9;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 5px;
+            font-size: 13px;
+            color: #555;
+        }
+
+        .calculation-item {
+            margin-bottom: 8px;
+        }
+
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+            font-size: 14px;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .success-message {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+            font-size: 14px;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+
+        .security-code-info {
+            background: #e3f2fd;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-size: 12px;
+            color: #1976d2;
+        }
+
+        .user-list {
+            margin-top: 15px;
+        }
+
+        .user-item {
+            background: #f5f5f5;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .user-name {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .logout-btn {
+            background: #6c757d;
+            padding: 8px 15px;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+
+        .admin-link {
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .admin-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .admin-link a:hover {
+            text-decoration: underline;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 24px;
+                margin-bottom: 20px;
+            }
+
+            .password-text {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 로그인 화면 -->
+    <div class="container" id="loginScreen">
+        <h1>진우에스엠씨AML</h1>
+        <h2>로그인</h2>
+        
+        <form id="loginForm" onsubmit="handleLogin(event)">
+            <div class="form-group">
+                <label for="loginUsername">사용자명:</label>
+                <input type="text" id="loginUsername" required placeholder="사용자명 입력">
+            </div>
+
+            <div class="form-group">
+                <label for="loginPassword">비밀번호:</label>
+                <input type="password" id="loginPassword" required placeholder="비밀번호 입력">
+            </div>
+
+            <button type="submit" class="btn">로그인</button>
+        </form>
+
+        <div class="error-message" id="loginError"></div>
+        <div class="admin-link">
+            <a href="#" onclick="showAdminPasswordScreen(); return false;">관리자 모드</a>
+        </div>
+    </div>
+
+    <!-- 관리자 비밀번호 입력 화면 -->
+    <div class="container hidden" id="adminPasswordScreen">
+        <h1>진우에스엠씨AML</h1>
+        <h2>관리자 비밀번호 입력</h2>
+        
+        <form id="adminPasswordForm" onsubmit="verifyAdminPassword(event)">
+            <div class="form-group">
+                <label for="adminPassword">관리자 비밀번호:</label>
+                <input type="password" id="adminPassword" required placeholder="관리자 비밀번호 입력">
+            </div>
+
+            <button type="submit" class="btn">확인</button>
+        </form>
+
+        <div class="error-message" id="adminPasswordError"></div>
+        <button class="btn btn-secondary logout-btn" onclick="backToLogin()">로그인 화면으로</button>
+    </div>
+
+    <!-- 관리자 패널 -->
+    <div class="container hidden" id="adminPanel">
+        <h1>진우에스엠씨AML</h1>
+        
+        <h2>사용자 등록</h2>
+        <form id="registerForm" onsubmit="registerUser(event)">
+            <div class="form-group">
+                <label for="newUsername">사용자명:</label>
+                <input type="text" id="newUsername" required placeholder="새 사용자명 입력">
+            </div>
+
+            <div class="form-group">
+                <label for="newPassword">비밀번호:</label>
+                <input type="password" id="newPassword" required placeholder="비밀번호 입력">
+            </div>
+
+            <button type="submit" class="btn">사용자 등록</button>
+        </form>
+
+        <div class="error-message" id="registerError"></div>
+        <div class="success-message" id="registerSuccess"></div>
+
+        <h2 style="margin-top: 30px;">등록된 사용자 목록</h2>
+        <div class="user-list" id="userList"></div>
+
+        <button class="btn btn-secondary logout-btn" onclick="backToLogin()">로그인 화면으로</button>
+    </div>
+
+    <!-- 비밀번호 생성기 화면 -->
+    <div class="container hidden" id="generatorScreen">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h1 style="margin: 0;">진우에스엠씨AML</h1>
+            <button class="btn btn-secondary logout-btn" onclick="logout()" style="width: auto; padding: 8px 15px; margin: 0;">로그아웃</button>
+        </div>
+        
+        <form id="passwordForm" onsubmit="generatePassword(event)">
+            <div class="form-group">
+                <label for="month">월 (Month):</label>
+                <input type="number" id="month" min="1" max="12" required placeholder="1-12 사이 입력">
+            </div>
+
+            <div class="form-group">
+                <label for="day">일 (Day):</label>
+                <input type="number" id="day" min="1" max="31" required placeholder="1-31 사이 입력">
+            </div>
+
+            <div class="form-group">
+                <label for="securityCodeNum">보안코드 번호:</label>
+                <input type="number" id="securityCodeNum" min="1" max="30" required placeholder="1-30 사이 입력">
+            </div>
+
+            <button type="submit" class="btn">비밀번호 생성</button>
+        </form>
+
+        <div class="error-message" id="errorMessage"></div>
+
+        <div class="result-container" id="resultContainer">
+            <div class="result-item">
+                <div class="result-label">설정비밀번호:</div>
+                <div class="password-text" id="password1"></div>
+                <button class="copy-btn" onclick="copyPassword('password1')">복사</button>
+            </div>
+
+            <div class="result-item">
+                <div class="result-label">점검 비밀번호:</div>
+                <div class="password-text" id="password2"></div>
+                <button class="copy-btn" onclick="copyPassword('password2')">복사</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 로컬스토리지에서 사용자 데이터 가져오기
+        function getUsers() {
+            const users = localStorage.getItem('users');
+            return users ? JSON.parse(users) : {};
+        }
+
+        // 로컬스토리지에 사용자 데이터 저장
+        function saveUsers(users) {
+            localStorage.setItem('users', JSON.stringify(users));
+        }
+
+        // 현재 로그인한 사용자 확인
+        function getCurrentUser() {
+            return localStorage.getItem('currentUser');
+        }
+
+        // 현재 로그인한 사용자 설정
+        function setCurrentUser(username) {
+            localStorage.setItem('currentUser', username);
+        }
+
+        // 로그인 처리
+        function handleLogin(event) {
+            event.preventDefault();
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+            const errorDiv = document.getElementById('loginError');
+
+            const users = getUsers();
+
+            if (users[username] && users[username] === password) {
+                setCurrentUser(username);
+                showGenerator();
+            } else {
+                errorDiv.textContent = '사용자명 또는 비밀번호가 올바르지 않습니다.';
+                errorDiv.classList.add('show');
+            }
+        }
+
+        // 사용자 등록
+        function registerUser(event) {
+            event.preventDefault();
+            const username = document.getElementById('newUsername').value;
+            const password = document.getElementById('newPassword').value;
+            const errorDiv = document.getElementById('registerError');
+            const successDiv = document.getElementById('registerSuccess');
+
+            errorDiv.classList.remove('show');
+            successDiv.classList.remove('show');
+
+            const users = getUsers();
+
+            if (users[username]) {
+                errorDiv.textContent = '이미 존재하는 사용자명입니다.';
+                errorDiv.classList.add('show');
+                return;
+            }
+
+            users[username] = password;
+            saveUsers(users);
+
+            successDiv.textContent = '사용자가 성공적으로 등록되었습니다.';
+            successDiv.classList.add('show');
+
+            // 폼 초기화
+            document.getElementById('newUsername').value = '';
+            document.getElementById('newPassword').value = '';
+
+            // 사용자 목록 업데이트
+            updateUserList();
+        }
+
+        // 사용자 삭제
+        function deleteUser(username) {
+            if (confirm(`정말로 사용자 "${username}"을(를) 삭제하시겠습니까?`)) {
+                const users = getUsers();
+                delete users[username];
+                saveUsers(users);
+                updateUserList();
+            }
+        }
+
+        // 사용자 목록 업데이트
+        function updateUserList() {
+            const userListDiv = document.getElementById('userList');
+            const users = getUsers();
+            const usernames = Object.keys(users);
+
+            if (usernames.length === 0) {
+                userListDiv.innerHTML = '<p style="color: #999; text-align: center;">등록된 사용자가 없습니다.</p>';
+                return;
+            }
+
+            userListDiv.innerHTML = usernames.map(username => `
+                <div class="user-item">
+                    <span class="user-name">${username}</span>
+                    <button class="btn btn-danger" onclick="deleteUser('${username}')">삭제</button>
+                </div>
+            `).join('');
+        }
+
+        // 관리자 비밀번호 상수
+        const ADMIN_PASSWORD = 'admin2529';
+
+        // 관리자 비밀번호 확인
+        function verifyAdminPassword(event) {
+            event.preventDefault();
+            const password = document.getElementById('adminPassword').value;
+            const errorDiv = document.getElementById('adminPasswordError');
+
+            if (password === ADMIN_PASSWORD) {
+                document.getElementById('adminPassword').value = '';
+                errorDiv.classList.remove('show');
+                showAdminPanel();
+            } else {
+                errorDiv.textContent = '관리자 비밀번호가 올바르지 않습니다.';
+                errorDiv.classList.add('show');
+            }
+        }
+
+        // 화면 전환 함수들
+        function showLogin() {
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('adminPasswordScreen').classList.add('hidden');
+            document.getElementById('adminPanel').classList.add('hidden');
+            document.getElementById('generatorScreen').classList.add('hidden');
+            document.getElementById('loginUsername').value = '';
+            document.getElementById('loginPassword').value = '';
+            document.getElementById('loginError').classList.remove('show');
+        }
+
+        function showAdminPasswordScreen() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('adminPasswordScreen').classList.remove('hidden');
+            document.getElementById('adminPanel').classList.add('hidden');
+            document.getElementById('generatorScreen').classList.add('hidden');
+            document.getElementById('adminPassword').value = '';
+            document.getElementById('adminPasswordError').classList.remove('show');
+        }
+
+        function showAdminPanel() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('adminPasswordScreen').classList.add('hidden');
+            document.getElementById('adminPanel').classList.remove('hidden');
+            document.getElementById('generatorScreen').classList.add('hidden');
+            updateUserList();
+        }
+
+        function showGenerator() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('adminPasswordScreen').classList.add('hidden');
+            document.getElementById('adminPanel').classList.add('hidden');
+            document.getElementById('generatorScreen').classList.remove('hidden');
+        }
+
+        function backToLogin() {
+            showLogin();
+        }
+
+        function logout() {
+            localStorage.removeItem('currentUser');
+            showLogin();
+        }
+
+        // 보안코드 테이블
+        const securityCodes = {
+            1: "0247", 2: "1938", 3: "4501", 4: "5826", 5: "7093",
+            6: "8610", 7: "3344", 8: "1199", 9: "2765", 10: "4082",
+            11: "9900", 12: "6574", 13: "3210", 14: "7438", 15: "8855",
+            16: "4607", 17: "5321", 18: "1740", 19: "2983", 20: "6116",
+            21: "0471", 22: "2550", 23: "3869", 24: "4722", 25: "5087",
+            26: "6394", 27: "7841", 28: "8562", 29: "9037", 30: "1406"
+        };
+
+
+        // 월과 일을 2자리로 변환
+        function formatTwoDigits(num) {
+            return String(num).padStart(2, '0');
+        }
+
+        // 비밀번호 생성 함수
+        function generatePassword(event) {
+            event.preventDefault();
+
+            const month = parseInt(document.getElementById('month').value);
+            const day = parseInt(document.getElementById('day').value);
+            const securityCodeNum = parseInt(document.getElementById('securityCodeNum').value);
+
+            const errorMessage = document.getElementById('errorMessage');
+            const resultContainer = document.getElementById('resultContainer');
+
+            // 에러 메시지 숨기기
+            errorMessage.classList.remove('show');
+
+            // 유효성 검사
+            if (month < 1 || month > 12) {
+                showError('월은 1부터 12까지 입력해주세요.');
+                return;
+            }
+
+            if (day < 1 || day > 31) {
+                showError('일은 1부터 31까지 입력해주세요.');
+                return;
+            }
+
+            if (securityCodeNum < 1 || securityCodeNum > 30) {
+                showError('보안코드 번호는 1부터 30까지 입력해주세요.');
+                return;
+            }
+
+            // 보안코드 가져오기
+            const securityCode = securityCodes[securityCodeNum];
+
+            // 계산 수행
+            const monthStr = formatTwoDigits(month);
+            const dayStr = formatTwoDigits(day);
+
+            // result1 = 월 + 일
+            const result1 = month + day;
+
+            // result2 = 보안코드의 첫 두 자리 × 보안코드의 마지막 두 자리
+            const firstTwo = parseInt(securityCode.substring(0, 2));
+            const lastTwo = parseInt(securityCode.substring(2, 4));
+            const result2 = firstTwo * lastTwo;
+
+            // result3 = result1 - result2
+            const result3 = result1 - result2;
+
+            // result4 = |result3| ÷ 10 (앞 2자리만 사용)
+            const result4 = Math.abs(result3) / 10;
+            const result4Str = String(Math.floor(result4)).padStart(2, '0').substring(0, 2);
+
+            // 첫 번째 비밀번호: 월(2자리) + 일(2자리) + result4(앞 2자리)
+            const password1 = monthStr + dayStr + result4Str;
+
+            // 두 번째 비밀번호: 월(2자리) + 일(2자리) + (result1 × 2)
+            const result1Times2 = result1 * 2;
+            const password2 = monthStr + dayStr + String(result1Times2).padStart(2, '0');
+
+            // 결과 표시
+            document.getElementById('password1').textContent = password1;
+            document.getElementById('password2').textContent = password2;
+
+            resultContainer.classList.add('show');
+        }
+
+        // 에러 메시지 표시
+        function showError(message) {
+            const errorMessage = document.getElementById('errorMessage');
+            errorMessage.textContent = '오류: ' + message;
+            errorMessage.classList.add('show');
+            document.getElementById('resultContainer').classList.remove('show');
+        }
+
+        // 비밀번호 복사
+        function copyPassword(passwordId) {
+            const passwordText = document.getElementById(passwordId).textContent;
+            const button = event.target;
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(passwordText).then(function() {
+                    showCopyFeedback(button);
+                }).catch(function() {
+                    fallbackCopyToClipboard(passwordText, button);
+                });
+            } else {
+                fallbackCopyToClipboard(passwordText, button);
+            }
+        }
+
+        // 폴백 복사 방법
+        function fallbackCopyToClipboard(text, button) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.opacity = '0';
+            document.body.appendChild(textArea);
+            textArea.select();
+            
+            try {
+                document.execCommand('copy');
+                showCopyFeedback(button);
+            } catch (err) {
+                alert('복사에 실패했습니다. 비밀번호를 직접 선택해주세요.');
+            }
+            
+            document.body.removeChild(textArea);
+        }
+
+        // 복사 피드백 표시
+        function showCopyFeedback(button) {
+            const originalText = button.textContent;
+            button.textContent = '복사됨!';
+            button.classList.add('copied');
+            
+            setTimeout(function() {
+                button.textContent = originalText;
+                button.classList.remove('copied');
+            }, 2000);
+        }
+
+        // 페이지 로드 시 로그인 상태 확인
+        window.addEventListener('DOMContentLoaded', function() {
+            const currentUser = getCurrentUser();
+            if (currentUser) {
+                showGenerator();
+            } else {
+                showLogin();
+            }
+        });
+    </script>
+</body>
+</html>
