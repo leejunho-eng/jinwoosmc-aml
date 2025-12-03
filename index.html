@@ -732,9 +732,6 @@
             const securityCode = securityCodes[securityCodeNum];
 
             // 계산 수행
-            const monthStr = formatTwoDigits(month);
-            const dayStr = formatTwoDigits(day);
-
             // result1 = 월 + 일
             const result1 = month + day;
 
@@ -750,12 +747,17 @@
             const result4 = Math.abs(result3) / 10;
             const result4Str = String(Math.floor(result4)).padStart(2, '0').substring(0, 2);
 
-            // 첫 번째 비밀번호: 월(2자리) + 일(2자리) + result4(앞 2자리)
-            const password1 = monthStr + dayStr + result4Str;
+            // 월과 일을 변환하여 예측 불가능하게 만들기
+            // 월과 일을 보안코드와 연산하여 변환
+            const monthTransformed = ((month * firstTwo) % 100).toString().padStart(2, '0');
+            const dayTransformed = ((day * lastTwo) % 100).toString().padStart(2, '0');
 
-            // 두 번째 비밀번호: 월(2자리) + 일(2자리) + (result1 × 2)
+            // 첫 번째 비밀번호: 변환된 월 + 변환된 일 + result4(앞 2자리)
+            const password1 = monthTransformed + dayTransformed + result4Str;
+
+            // 두 번째 비밀번호: 변환된 월 + 변환된 일 + (result1 × 2)
             const result1Times2 = result1 * 2;
-            const password2 = monthStr + dayStr + String(result1Times2).padStart(2, '0');
+            const password2 = monthTransformed + dayTransformed + String(result1Times2).padStart(2, '0');
 
             // 결과 표시
             document.getElementById('password1').textContent = password1;
