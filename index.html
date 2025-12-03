@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>진우에스엠씨AML</title>
+    <!-- Supabase JS 클라이언트 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- 설정 파일 (별도 관리) -->
+    <script src="config.js"></script>
     <style>
         * {
             margin: 0;
@@ -397,47 +401,81 @@
     </div>
 
     <script>
-        // 로컬스토리지에서 사용자 데이터 가져오기
-        function getUsers() {
-            const users = localStorage.getItem('users');
-            return users ? JSON.parse(users) : {};
+        // 설정 파일에서 값 가져오기
+        if (typeof CONFIG === 'undefined') {
+            console.error('⚠️ config.js 파일이 로드되지 않았습니다. config.example.js를 참고하여 config.js 파일을 생성하세요.');
+            alert('설정 파일이 없습니다. config.js 파일을 확인하세요.');
         }
+        
+        const SUPABASE_URL = CONFIG?.SUPABASE_URL || '';
+        const SUPABASE_ANON_KEY = CONFIG?.SUPABASE_ANON_KEY || '';
+        const ADMIN_PASSWORD = CONFIG?.ADMIN_PASSWORD || 'admin2529';
+        
+        let supabase;
+        let currentUser = null;
+        let isAdmin = false;
 
-        // 로컬스토리지에 사용자 데이터 저장
-        function saveUsers(users) {
-            localStorage.setItem('users', JSON.stringify(users));
+        // Supabase 클라이언트 초기화
+        function initSupabase() {
+            try {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                console.log('Supabase 초기화 완료');
+                return true;
+            } catch (error) {
+                console.error('Supabase 초기화 실패:', error);
+                return false;
+            }
         }
 
         // 현재 로그인한 사용자 확인
         function getCurrentUser() {
-            return localStorage.getItem('currentUser');
+            return currentUser;
         }
 
         // 현재 로그인한 사용자 설정
         function setCurrentUser(username) {
+            currentUser = username;
             localStorage.setItem('currentUser', username);
         }
 
         // 로그인 처리
-        function handleLogin(event) {
+        async function handleLogin(event) {
             event.preventDefault();
             const username = document.getElementById('loginUsername').value;
             const password = document.getElementById('loginPassword').value;
             const errorDiv = document.getElementById('loginError');
 
-            const users = getUsers();
+            try {
+                // Supabase에서 사용자 조회
+                const { data, error } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('username', username)
+                    .single();
 
-            if (users[username] && users[username] === password) {
-                setCurrentUser(username);
-                showGenerator();
-            } else {
-                errorDiv.textContent = '사용자명 또는 비밀번호가 올바르지 않습니다.';
+                if (error || !data) {
+                    errorDiv.textContent = '사용자명 또는 비밀번호가 올바르지 않습니다.';
+                    errorDiv.classList.add('show');
+                    return;
+                }
+
+                // 비밀번호 확인 (간단한 비교, 실제로는 해싱된 비밀번호와 비교해야 함)
+                if (data.password_hash === password) {
+                    setCurrentUser(username);
+                    isAdmin = data.is_admin || false;
+                    showGenerator();
+                } else {
+                    errorDiv.textContent = '사용자명 또는 비밀번호가 올바르지 않습니다.';
+                    errorDiv.classList.add('show');
+                }
+            } catch (err) {
+                errorDiv.textContent = '로그인 중 오류가 발생했습니다: ' + err.message;
                 errorDiv.classList.add('show');
             }
         }
 
         // 사용자 등록
-        function registerUser(event) {
+        async function registerUser(event) {
             event.preventDefault();
             const username = document.getElementById('newUsername').value;
             const password = document.getElementById('newPassword').value;
@@ -447,59 +485,106 @@
             errorDiv.classList.remove('show');
             successDiv.classList.remove('show');
 
-            const users = getUsers();
+            try {
+                // 중복 확인
+                const { data: existingUser } = await supabase
+                    .from('users')
+                    .select('username')
+                    .eq('username', username)
+                    .single();
 
-            if (users[username]) {
-                errorDiv.textContent = '이미 존재하는 사용자명입니다.';
+                if (existingUser) {
+                    errorDiv.textContent = '이미 존재하는 사용자명입니다.';
+                    errorDiv.classList.add('show');
+                    return;
+                }
+
+                // 새 사용자 추가
+                const { data, error } = await supabase
+                    .from('users')
+                    .insert([
+                        {
+                            username: username,
+                            password_hash: password, // 실제로는 해싱해야 함
+                            is_admin: false
+                        }
+                    ])
+                    .select();
+
+                if (error) {
+                    errorDiv.textContent = '사용자 등록 중 오류가 발생했습니다: ' + error.message;
+                    errorDiv.classList.add('show');
+                    return;
+                }
+
+                successDiv.textContent = '사용자가 성공적으로 등록되었습니다.';
+                successDiv.classList.add('show');
+
+                // 폼 초기화
+                document.getElementById('newUsername').value = '';
+                document.getElementById('newPassword').value = '';
+
+                // 사용자 목록 업데이트
+                await updateUserList();
+            } catch (err) {
+                errorDiv.textContent = '오류: ' + err.message;
                 errorDiv.classList.add('show');
-                return;
             }
-
-            users[username] = password;
-            saveUsers(users);
-
-            successDiv.textContent = '사용자가 성공적으로 등록되었습니다.';
-            successDiv.classList.add('show');
-
-            // 폼 초기화
-            document.getElementById('newUsername').value = '';
-            document.getElementById('newPassword').value = '';
-
-            // 사용자 목록 업데이트
-            updateUserList();
         }
 
         // 사용자 삭제
-        function deleteUser(username) {
-            if (confirm(`정말로 사용자 "${username}"을(를) 삭제하시겠습니까?`)) {
-                const users = getUsers();
-                delete users[username];
-                saveUsers(users);
-                updateUserList();
+        async function deleteUser(username) {
+            if (!confirm(`정말로 사용자 "${username}"을(를) 삭제하시겠습니까?`)) {
+                return;
+            }
+
+            try {
+                const { error } = await supabase
+                    .from('users')
+                    .delete()
+                    .eq('username', username);
+
+                if (error) {
+                    alert('사용자 삭제 중 오류가 발생했습니다: ' + error.message);
+                    return;
+                }
+
+                await updateUserList();
+            } catch (err) {
+                alert('오류: ' + err.message);
             }
         }
 
         // 사용자 목록 업데이트
-        function updateUserList() {
+        async function updateUserList() {
             const userListDiv = document.getElementById('userList');
-            const users = getUsers();
-            const usernames = Object.keys(users);
 
-            if (usernames.length === 0) {
-                userListDiv.innerHTML = '<p style="color: #999; text-align: center;">등록된 사용자가 없습니다.</p>';
-                return;
+            try {
+                const { data: users, error } = await supabase
+                    .from('users')
+                    .select('username')
+                    .order('username');
+
+                if (error) {
+                    userListDiv.innerHTML = '<p style="color: #c62828; text-align: center;">사용자 목록을 불러오는 중 오류가 발생했습니다.</p>';
+                    return;
+                }
+
+                if (!users || users.length === 0) {
+                    userListDiv.innerHTML = '<p style="color: #999; text-align: center;">등록된 사용자가 없습니다.</p>';
+                    return;
+                }
+
+                userListDiv.innerHTML = users.map(user => `
+                    <div class="user-item">
+                        <span class="user-name">${user.username}</span>
+                        <button class="btn btn-danger" onclick="deleteUser('${user.username}')">삭제</button>
+                    </div>
+                `).join('');
+            } catch (err) {
+                userListDiv.innerHTML = '<p style="color: #c62828; text-align: center;">오류: ' + err.message + '</p>';
             }
-
-            userListDiv.innerHTML = usernames.map(username => `
-                <div class="user-item">
-                    <span class="user-name">${username}</span>
-                    <button class="btn btn-danger" onclick="deleteUser('${username}')">삭제</button>
-                </div>
-            `).join('');
         }
-
-        // 관리자 비밀번호 상수
-        const ADMIN_PASSWORD = 'admin2529';
 
         // 관리자 비밀번호 확인
         function verifyAdminPassword(event) {
@@ -557,6 +642,8 @@
         }
 
         function logout() {
+            currentUser = null;
+            isAdmin = false;
             localStorage.removeItem('currentUser');
             showLogin();
         }
@@ -698,11 +785,35 @@
             }, 2000);
         }
 
-        // 페이지 로드 시 로그인 상태 확인
-        window.addEventListener('DOMContentLoaded', function() {
-            const currentUser = getCurrentUser();
-            if (currentUser) {
-                showGenerator();
+        // 페이지 로드 시 초기화
+        window.addEventListener('DOMContentLoaded', async function() {
+            // Supabase 초기화
+            if (!initSupabase()) {
+                alert('Supabase 설정이 필요합니다. 개발자 도구 콘솔을 확인하세요.');
+                return;
+            }
+
+            // 로그인 상태 확인
+            const savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                // 저장된 사용자 정보로 세션 복원 시도
+                try {
+                    const { data } = await supabase
+                        .from('users')
+                        .select('*')
+                        .eq('username', savedUser)
+                        .single();
+                    
+                    if (data) {
+                        currentUser = savedUser;
+                        isAdmin = data.is_admin || false;
+                        showGenerator();
+                    } else {
+                        showLogin();
+                    }
+                } catch (err) {
+                    showLogin();
+                }
             } else {
                 showLogin();
             }

@@ -1,0 +1,14 @@
+# 설정 파일 (보안상 버전 관리에서 제외)
+config.js
+
+# 환경 변수 파일
+.env
+.env.local
+
+# 로그 파일
+*.log
+
+# 운영체제 파일
+.DS_Store
+Thumbs.db
+
