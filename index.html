@@ -401,15 +401,26 @@
     </div>
 
     <script>
-        // 설정 파일에서 값 가져오기
-        if (typeof CONFIG === 'undefined') {
-            console.error('⚠️ config.js 파일이 로드되지 않았습니다. config.example.js를 참고하여 config.js 파일을 생성하세요.');
-            alert('설정 파일이 없습니다. config.js 파일을 확인하세요.');
-        }
+        // 설정 파일에서 값 가져오기 (config.js가 없으면 기본값 사용)
+        // 휴대폰에서도 작동하도록 기본값을 포함
+        const SUPABASE_URL = (typeof CONFIG !== 'undefined' && CONFIG.SUPABASE_URL) 
+            ? CONFIG.SUPABASE_URL 
+            : 'https://hpgibccgftmuihbrxetn.supabase.co';
         
-        const SUPABASE_URL = CONFIG?.SUPABASE_URL || '';
-        const SUPABASE_ANON_KEY = CONFIG?.SUPABASE_ANON_KEY || '';
-        const ADMIN_PASSWORD = CONFIG?.ADMIN_PASSWORD || 'admin2529';
+        const SUPABASE_ANON_KEY = (typeof CONFIG !== 'undefined' && CONFIG.SUPABASE_ANON_KEY) 
+            ? CONFIG.SUPABASE_ANON_KEY 
+            : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhwZ2liY2NnZnRtdWloYnJ4ZXRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3NDE2MDIsImV4cCI6MjA4MDMxNzYwMn0.iR85ZLzeHrjjn9cbP9xOuNBX8IR4AO7f5NzHU9vCBqI';
+        
+        const ADMIN_PASSWORD = (typeof CONFIG !== 'undefined' && CONFIG.ADMIN_PASSWORD) 
+            ? CONFIG.ADMIN_PASSWORD 
+            : 'admin2529';
+        
+        // config.js가 로드되었는지 확인 (선택사항)
+        if (typeof CONFIG === 'undefined') {
+            console.log('ℹ️ config.js 파일이 없습니다. 기본 설정값을 사용합니다.');
+        } else {
+            console.log('✅ config.js 파일이 로드되었습니다.');
+        }
         
         let supabase;
         let currentUser = null;
@@ -418,11 +429,17 @@
         // Supabase 클라이언트 초기화
         function initSupabase() {
             try {
+                if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+                    console.error('Supabase 설정이 없습니다. URL:', SUPABASE_URL, 'Key:', SUPABASE_ANON_KEY ? '있음' : '없음');
+                    return false;
+                }
+                
                 supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                console.log('Supabase 초기화 완료');
+                console.log('✅ Supabase 초기화 완료');
+                console.log('Supabase URL:', SUPABASE_URL);
                 return true;
             } catch (error) {
-                console.error('Supabase 초기화 실패:', error);
+                console.error('❌ Supabase 초기화 실패:', error);
                 return false;
             }
         }
@@ -558,23 +575,39 @@
         // 사용자 목록 업데이트
         async function updateUserList() {
             const userListDiv = document.getElementById('userList');
+            
+            // 로딩 표시
+            userListDiv.innerHTML = '<p style="color: #999; text-align: center;">사용자 목록을 불러오는 중...</p>';
 
             try {
+                console.log('사용자 목록 조회 시작...');
+                
+                if (!supabase) {
+                    console.error('Supabase 클라이언트가 초기화되지 않았습니다.');
+                    userListDiv.innerHTML = '<p style="color: #c62828; text-align: center;">Supabase 연결 오류. 페이지를 새로고침해주세요.</p>';
+                    return;
+                }
+
                 const { data: users, error } = await supabase
                     .from('users')
                     .select('username')
                     .order('username');
 
+                console.log('사용자 목록 조회 결과:', { users, error });
+
                 if (error) {
-                    userListDiv.innerHTML = '<p style="color: #c62828; text-align: center;">사용자 목록을 불러오는 중 오류가 발생했습니다.</p>';
+                    console.error('Supabase 오류:', error);
+                    userListDiv.innerHTML = `<p style="color: #c62828; text-align: center;">사용자 목록을 불러오는 중 오류가 발생했습니다.<br><small>${error.message}</small></p>`;
                     return;
                 }
 
                 if (!users || users.length === 0) {
+                    console.log('등록된 사용자가 없습니다.');
                     userListDiv.innerHTML = '<p style="color: #999; text-align: center;">등록된 사용자가 없습니다.</p>';
                     return;
                 }
 
+                console.log('사용자 목록 표시:', users.length + '명');
                 userListDiv.innerHTML = users.map(user => `
                     <div class="user-item">
                         <span class="user-name">${user.username}</span>
@@ -582,7 +615,8 @@
                     </div>
                 `).join('');
             } catch (err) {
-                userListDiv.innerHTML = '<p style="color: #c62828; text-align: center;">오류: ' + err.message + '</p>';
+                console.error('예외 발생:', err);
+                userListDiv.innerHTML = `<p style="color: #c62828; text-align: center;">오류: ${err.message}<br><small>브라우저 콘솔을 확인하세요.</small></p>`;
             }
         }
 
