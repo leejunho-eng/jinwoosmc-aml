@@ -286,12 +286,16 @@
     </style>
 </head>
 <body>
+    <div id="runtimeBadge" style="position: fixed; top: 10px; right: 10px; z-index: 9999; background: #c62828; color: #fff; padding: 6px 10px; border-radius: 6px; font-size: 12px; font-weight: 600;">
+        JS 미실행
+    </div>
+
     <!-- 로그인 화면 -->
     <div class="container" id="loginScreen">
         <h1>진우에스엠씨AML</h1>
         <h2>로그인</h2>
         
-        <form id="loginForm" onsubmit="handleLogin(event)">
+        <form id="loginForm">
             <div class="form-group">
                 <label for="loginUsername">사용자명:</label>
                 <input type="text" id="loginUsername" required placeholder="사용자명 입력">
@@ -307,7 +311,7 @@
 
         <div class="error-message" id="loginError"></div>
         <div class="admin-link">
-            <a href="#" onclick="showAdminPasswordScreen(); return false;">관리자 모드</a>
+            <a href="#" id="adminModeLink">관리자 모드</a>
         </div>
     </div>
 
@@ -316,7 +320,7 @@
         <h1>진우에스엠씨AML</h1>
         <h2>관리자 비밀번호 입력</h2>
         
-        <form id="adminPasswordForm" onsubmit="verifyAdminPassword(event)">
+        <form id="adminPasswordForm">
             <div class="form-group">
                 <label for="adminPassword">관리자 비밀번호:</label>
                 <input type="password" id="adminPassword" required placeholder="관리자 비밀번호 입력">
@@ -326,7 +330,7 @@
         </form>
 
         <div class="error-message" id="adminPasswordError"></div>
-        <button class="btn btn-secondary logout-btn" onclick="backToLogin()">로그인 화면으로</button>
+        <button id="adminBackButton" class="btn btn-secondary logout-btn" type="button">로그인 화면으로</button>
     </div>
 
     <!-- 관리자 패널 -->
@@ -334,7 +338,7 @@
         <h1>진우에스엠씨AML</h1>
         
         <h2>사용자 등록</h2>
-        <form id="registerForm" onsubmit="registerUser(event)">
+        <form id="registerForm">
             <div class="form-group">
                 <label for="newUsername">사용자명:</label>
                 <input type="text" id="newUsername" required placeholder="새 사용자명 입력">
@@ -354,17 +358,20 @@
         <h2 style="margin-top: 30px;">등록된 사용자 목록</h2>
         <div class="user-list" id="userList"></div>
 
-        <button class="btn btn-secondary logout-btn" onclick="backToLogin()">로그인 화면으로</button>
+        <button id="panelBackButton" class="btn btn-secondary logout-btn" type="button">로그인 화면으로</button>
     </div>
 
     <!-- 비밀번호 생성기 화면 -->
     <div class="container hidden" id="generatorScreen">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <h1 style="margin: 0;">진우에스엠씨AML</h1>
-            <button class="btn btn-secondary logout-btn" onclick="logout()" style="width: auto; padding: 8px 15px; margin: 0;">로그아웃</button>
+            <div style="display: flex; gap: 8px;">
+                <button id="generatorAdminButton" class="btn btn-secondary logout-btn hidden" type="button" style="width: auto; padding: 8px 15px; margin: 0;">관리자 모드</button>
+                <button id="generatorLogoutButton" class="btn btn-secondary logout-btn" type="button" style="width: auto; padding: 8px 15px; margin: 0;">로그아웃</button>
+            </div>
         </div>
         
-        <form id="passwordForm" onsubmit="generatePassword(event)">
+        <form id="passwordForm">
             <div class="form-group">
                 <label for="year">연도 (Year):</label>
                 <input type="number" id="year" min="0" max="99" required placeholder="0-99 사이 입력 (예: 25)">
@@ -394,486 +401,17 @@
             <div class="result-item">
                 <div class="result-label">설정비밀번호:</div>
                 <div class="password-text" id="password1"></div>
-                <button class="copy-btn" onclick="copyPassword('password1')">복사</button>
+                <button class="copy-btn" type="button" data-password-id="password1">복사</button>
             </div>
 
             <div class="result-item">
                 <div class="result-label">점검 비밀번호:</div>
                 <div class="password-text" id="password2"></div>
-                <button class="copy-btn" onclick="copyPassword('password2')">복사</button>
+                <button class="copy-btn" type="button" data-password-id="password2">복사</button>
             </div>
         </div>
     </div>
 
-    <script>
-        // 설정 파일에서 값 가져오기 (config.js가 없으면 기본값 사용)
-        // 휴대폰에서도 작동하도록 기본값을 포함
-        const SUPABASE_URL = (typeof CONFIG !== 'undefined' && CONFIG.SUPABASE_URL) 
-            ? CONFIG.SUPABASE_URL 
-            : 'https://hpgibccgftmuihbrxetn.supabase.co';
-        
-        const SUPABASE_ANON_KEY = (typeof CONFIG !== 'undefined' && CONFIG.SUPABASE_ANON_KEY) 
-            ? CONFIG.SUPABASE_ANON_KEY 
-            : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhwZ2liY2NnZnRtdWloYnJ4ZXRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3NDE2MDIsImV4cCI6MjA4MDMxNzYwMn0.iR85ZLzeHrjjn9cbP9xOuNBX8IR4AO7f5NzHU9vCBqI';
-        
-        const ADMIN_PASSWORD = (typeof CONFIG !== 'undefined' && CONFIG.ADMIN_PASSWORD) 
-            ? CONFIG.ADMIN_PASSWORD 
-            : 'admin2529';
-        
-        // config.js가 로드되었는지 확인 (선택사항)
-        if (typeof CONFIG === 'undefined') {
-            console.log('ℹ️ config.js 파일이 없습니다. 기본 설정값을 사용합니다.');
-        } else {
-            console.log('✅ config.js 파일이 로드되었습니다.');
-        }
-        
-        let supabase;
-        let currentUser = null;
-        let isAdmin = false;
-
-        // Supabase 클라이언트 초기화
-        function initSupabase() {
-            try {
-                if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-                    console.error('Supabase 설정이 없습니다. URL:', SUPABASE_URL, 'Key:', SUPABASE_ANON_KEY ? '있음' : '없음');
-                    return false;
-                }
-                
-                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                console.log('✅ Supabase 초기화 완료');
-                console.log('Supabase URL:', SUPABASE_URL);
-                return true;
-            } catch (error) {
-                console.error('❌ Supabase 초기화 실패:', error);
-                return false;
-            }
-        }
-
-        // 현재 로그인한 사용자 확인
-        function getCurrentUser() {
-            return currentUser;
-        }
-
-        // 현재 로그인한 사용자 설정
-        function setCurrentUser(username) {
-            currentUser = username;
-            localStorage.setItem('currentUser', username);
-        }
-
-        // 로그인 처리
-        async function handleLogin(event) {
-            event.preventDefault();
-            const username = document.getElementById('loginUsername').value;
-            const password = document.getElementById('loginPassword').value;
-            const errorDiv = document.getElementById('loginError');
-
-            try {
-                // Supabase에서 사용자 조회
-                const { data, error } = await supabase
-                    .from('users')
-                    .select('*')
-                    .eq('username', username)
-                    .single();
-
-                if (error || !data) {
-                    errorDiv.textContent = '사용자명 또는 비밀번호가 올바르지 않습니다.';
-                    errorDiv.classList.add('show');
-                    return;
-                }
-
-                // 비밀번호 확인 (간단한 비교, 실제로는 해싱된 비밀번호와 비교해야 함)
-                if (data.password_hash === password) {
-                    setCurrentUser(username);
-                    isAdmin = data.is_admin || false;
-                    showGenerator();
-                } else {
-                    errorDiv.textContent = '사용자명 또는 비밀번호가 올바르지 않습니다.';
-                    errorDiv.classList.add('show');
-                }
-            } catch (err) {
-                errorDiv.textContent = '로그인 중 오류가 발생했습니다: ' + err.message;
-                errorDiv.classList.add('show');
-            }
-        }
-
-        // 사용자 등록
-        async function registerUser(event) {
-            event.preventDefault();
-            const username = document.getElementById('newUsername').value;
-            const password = document.getElementById('newPassword').value;
-            const errorDiv = document.getElementById('registerError');
-            const successDiv = document.getElementById('registerSuccess');
-
-            errorDiv.classList.remove('show');
-            successDiv.classList.remove('show');
-
-            try {
-                // 중복 확인
-                const { data: existingUser } = await supabase
-                    .from('users')
-                    .select('username')
-                    .eq('username', username)
-                    .single();
-
-                if (existingUser) {
-                    errorDiv.textContent = '이미 존재하는 사용자명입니다.';
-                    errorDiv.classList.add('show');
-                    return;
-                }
-
-                // 새 사용자 추가
-                const { data, error } = await supabase
-                    .from('users')
-                    .insert([
-                        {
-                            username: username,
-                            password_hash: password, // 실제로는 해싱해야 함
-                            is_admin: false
-                        }
-                    ])
-                    .select();
-
-                if (error) {
-                    errorDiv.textContent = '사용자 등록 중 오류가 발생했습니다: ' + error.message;
-                    errorDiv.classList.add('show');
-                    return;
-                }
-
-                successDiv.textContent = '사용자가 성공적으로 등록되었습니다.';
-                successDiv.classList.add('show');
-
-                // 폼 초기화
-                document.getElementById('newUsername').value = '';
-                document.getElementById('newPassword').value = '';
-
-                // 사용자 목록 업데이트
-                await updateUserList();
-            } catch (err) {
-                errorDiv.textContent = '오류: ' + err.message;
-                errorDiv.classList.add('show');
-            }
-        }
-
-        // 사용자 삭제
-        async function deleteUser(username) {
-            if (!confirm(`정말로 사용자 "${username}"을(를) 삭제하시겠습니까?`)) {
-                return;
-            }
-
-            try {
-                const { error } = await supabase
-                    .from('users')
-                    .delete()
-                    .eq('username', username);
-
-                if (error) {
-                    alert('사용자 삭제 중 오류가 발생했습니다: ' + error.message);
-                    return;
-                }
-
-                await updateUserList();
-            } catch (err) {
-                alert('오류: ' + err.message);
-            }
-        }
-
-        // 사용자 목록 업데이트
-        async function updateUserList() {
-            const userListDiv = document.getElementById('userList');
-            
-            // 로딩 표시
-            userListDiv.innerHTML = '<p style="color: #999; text-align: center;">사용자 목록을 불러오는 중...</p>';
-
-            try {
-                console.log('사용자 목록 조회 시작...');
-                
-                if (!supabase) {
-                    console.error('Supabase 클라이언트가 초기화되지 않았습니다.');
-                    userListDiv.innerHTML = '<p style="color: #c62828; text-align: center;">Supabase 연결 오류. 페이지를 새로고침해주세요.</p>';
-                    return;
-                }
-
-                const { data: users, error } = await supabase
-                    .from('users')
-                    .select('username')
-                    .order('username');
-
-                console.log('사용자 목록 조회 결과:', { users, error });
-
-                if (error) {
-                    console.error('Supabase 오류:', error);
-                    userListDiv.innerHTML = `<p style="color: #c62828; text-align: center;">사용자 목록을 불러오는 중 오류가 발생했습니다.<br><small>${error.message}</small></p>`;
-                    return;
-                }
-
-                if (!users || users.length === 0) {
-                    console.log('등록된 사용자가 없습니다.');
-                    userListDiv.innerHTML = '<p style="color: #999; text-align: center;">등록된 사용자가 없습니다.</p>';
-                    return;
-                }
-
-                console.log('사용자 목록 표시:', users.length + '명');
-                userListDiv.innerHTML = users.map(user => `
-                    <div class="user-item">
-                        <span class="user-name">${user.username}</span>
-                        <button class="btn btn-danger" onclick="deleteUser('${user.username}')">삭제</button>
-                    </div>
-                `).join('');
-            } catch (err) {
-                console.error('예외 발생:', err);
-                userListDiv.innerHTML = `<p style="color: #c62828; text-align: center;">오류: ${err.message}<br><small>브라우저 콘솔을 확인하세요.</small></p>`;
-            }
-        }
-
-        // 관리자 비밀번호 확인
-        function verifyAdminPassword(event) {
-            event.preventDefault();
-            const password = document.getElementById('adminPassword').value;
-            const errorDiv = document.getElementById('adminPasswordError');
-
-            if (password === ADMIN_PASSWORD) {
-                document.getElementById('adminPassword').value = '';
-                errorDiv.classList.remove('show');
-                showAdminPanel();
-            } else {
-                errorDiv.textContent = '관리자 비밀번호가 올바르지 않습니다.';
-                errorDiv.classList.add('show');
-            }
-        }
-
-        // 화면 전환 함수들
-        function showLogin() {
-            document.getElementById('loginScreen').classList.remove('hidden');
-            document.getElementById('adminPasswordScreen').classList.add('hidden');
-            document.getElementById('adminPanel').classList.add('hidden');
-            document.getElementById('generatorScreen').classList.add('hidden');
-            document.getElementById('loginUsername').value = '';
-            document.getElementById('loginPassword').value = '';
-            document.getElementById('loginError').classList.remove('show');
-        }
-
-        function showAdminPasswordScreen() {
-            document.getElementById('loginScreen').classList.add('hidden');
-            document.getElementById('adminPasswordScreen').classList.remove('hidden');
-            document.getElementById('adminPanel').classList.add('hidden');
-            document.getElementById('generatorScreen').classList.add('hidden');
-            document.getElementById('adminPassword').value = '';
-            document.getElementById('adminPasswordError').classList.remove('show');
-        }
-
-        function showAdminPanel() {
-            document.getElementById('loginScreen').classList.add('hidden');
-            document.getElementById('adminPasswordScreen').classList.add('hidden');
-            document.getElementById('adminPanel').classList.remove('hidden');
-            document.getElementById('generatorScreen').classList.add('hidden');
-            updateUserList();
-        }
-
-        function showGenerator() {
-            document.getElementById('loginScreen').classList.add('hidden');
-            document.getElementById('adminPasswordScreen').classList.add('hidden');
-            document.getElementById('adminPanel').classList.add('hidden');
-            document.getElementById('generatorScreen').classList.remove('hidden');
-        }
-
-        function backToLogin() {
-            showLogin();
-        }
-
-        function logout() {
-            currentUser = null;
-            isAdmin = false;
-            localStorage.removeItem('currentUser');
-            showLogin();
-        }
-
-        // 보안코드 테이블
-        const securityCodes = {
-            1: "0247", 2: "1938", 3: "4501", 4: "5826", 5: "7093",
-            6: "8610", 7: "3344", 8: "1199", 9: "2765", 10: "4082",
-            11: "9900", 12: "6574", 13: "3210", 14: "7438", 15: "8855",
-            16: "4607", 17: "5321", 18: "1740", 19: "2983", 20: "6116",
-            21: "0471", 22: "2550", 23: "3869", 24: "4722", 25: "5087",
-            26: "6394", 27: "7841", 28: "8562", 29: "9037", 30: "1406"
-        };
-
-
-        // 월과 일을 2자리로 변환
-        function formatTwoDigits(num) {
-            return String(num).padStart(2, '0');
-        }
-
-        // 비밀번호 생성 함수
-        function generatePassword(event) {
-            event.preventDefault();
-
-            const year = parseInt(document.getElementById('year').value);
-            const month = parseInt(document.getElementById('month').value);
-            const day = parseInt(document.getElementById('day').value);
-            const securityCodeNum = parseInt(document.getElementById('securityCodeNum').value);
-
-            const errorMessage = document.getElementById('errorMessage');
-            const resultContainer = document.getElementById('resultContainer');
-
-            // 에러 메시지 숨기기
-            errorMessage.classList.remove('show');
-
-            // 유효성 검사
-            if (year < 0 || year > 99) {
-                showError('연도는 0부터 99까지 입력해주세요.');
-                return;
-            }
-
-            if (month < 1 || month > 12) {
-                showError('월은 1부터 12까지 입력해주세요.');
-                return;
-            }
-
-            if (day < 1 || day > 31) {
-                showError('일은 1부터 31까지 입력해주세요.');
-                return;
-            }
-
-            if (securityCodeNum < 1 || securityCodeNum > 30) {
-                showError('보안코드 번호는 1부터 30까지 입력해주세요.');
-                return;
-            }
-
-            // 보안코드 가져오기
-            const securityCode = securityCodes[securityCodeNum];
-
-            // 보안코드 분해
-            const firstTwo = parseInt(securityCode.substring(0, 2));  // 앞 2자리
-            const thirdDigit = parseInt(securityCode.substring(2, 3)); // 3자리
-            const fourthDigit = parseInt(securityCode.substring(3, 4)); // 4자리
-
-            // 설정 비밀번호 생성 수식 (이미지의 방식)
-            // 1. 연도 × 일 + 보안번호 앞2자리
-            const calc1 = year * day + firstTwo;
-            const result1 = String(Math.floor(calc1)).padStart(2, '0').substring(0, 2);
-
-            // 2. 월 + 연도 × 보안번호 3자리
-            const calc2 = month + year * thirdDigit;
-            const result2 = String(Math.floor(calc2)).padStart(2, '0').substring(0, 2);
-
-            // 3. 일 + 월 × 보안번호 4자리
-            const calc3 = day + month * fourthDigit;
-            const result3 = String(Math.floor(calc3)).padStart(2, '0').substring(0, 2);
-
-            // 설정 비밀번호: result1 + result2 + result3
-            const password1 = result1 + result2 + result3;
-
-            // 점검 비밀번호 생성 수식 (정비모드 비밀번호 방식)
-            // 1. (연도 + 일) × 보안번호 앞2자리
-            const calc4 = (year + day) * firstTwo;
-            const result4 = String(Math.floor(calc4)).padStart(2, '0').substring(0, 2);
-
-            // 2. (월 × 연도) + 보안번호 3자리
-            const calc5 = (month * year) + thirdDigit;
-            const result5 = String(Math.floor(calc5)).padStart(2, '0').substring(0, 2);
-
-            // 3. (일 × 월) + 보안번호 4자리
-            const calc6 = (day * month) + fourthDigit;
-            const result6 = String(Math.floor(calc6)).padStart(2, '0').substring(0, 2);
-
-            // 점검 비밀번호: result4 + result5 + result6
-            const password2 = result4 + result5 + result6;
-
-            // 결과 표시
-            document.getElementById('password1').textContent = password1;
-            document.getElementById('password2').textContent = password2;
-
-            resultContainer.classList.add('show');
-        }
-
-        // 에러 메시지 표시
-        function showError(message) {
-            const errorMessage = document.getElementById('errorMessage');
-            errorMessage.textContent = '오류: ' + message;
-            errorMessage.classList.add('show');
-            document.getElementById('resultContainer').classList.remove('show');
-        }
-
-        // 비밀번호 복사
-        function copyPassword(passwordId) {
-            const passwordText = document.getElementById(passwordId).textContent;
-            const button = event.target;
-
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(passwordText).then(function() {
-                    showCopyFeedback(button);
-                }).catch(function() {
-                    fallbackCopyToClipboard(passwordText, button);
-                });
-            } else {
-                fallbackCopyToClipboard(passwordText, button);
-            }
-        }
-
-        // 폴백 복사 방법
-        function fallbackCopyToClipboard(text, button) {
-            const textArea = document.createElement('textarea');
-            textArea.value = text;
-            textArea.style.position = 'fixed';
-            textArea.style.opacity = '0';
-            document.body.appendChild(textArea);
-            textArea.select();
-            
-            try {
-                document.execCommand('copy');
-                showCopyFeedback(button);
-            } catch (err) {
-                alert('복사에 실패했습니다. 비밀번호를 직접 선택해주세요.');
-            }
-            
-            document.body.removeChild(textArea);
-        }
-
-        // 복사 피드백 표시
-        function showCopyFeedback(button) {
-            const originalText = button.textContent;
-            button.textContent = '복사됨!';
-            button.classList.add('copied');
-            
-            setTimeout(function() {
-                button.textContent = originalText;
-                button.classList.remove('copied');
-            }, 2000);
-        }
-
-        // 페이지 로드 시 초기화
-        window.addEventListener('DOMContentLoaded', async function() {
-            // Supabase 초기화
-            if (!initSupabase()) {
-                alert('Supabase 설정이 필요합니다. 개발자 도구 콘솔을 확인하세요.');
-                return;
-            }
-
-            // 로그인 상태 확인
-            const savedUser = localStorage.getItem('currentUser');
-            if (savedUser) {
-                // 저장된 사용자 정보로 세션 복원 시도
-                try {
-                    const { data } = await supabase
-                        .from('users')
-                        .select('*')
-                        .eq('username', savedUser)
-                        .single();
-                    
-                    if (data) {
-                        currentUser = savedUser;
-                        isAdmin = data.is_admin || false;
-                        showGenerator();
-                    } else {
-                        showLogin();
-                    }
-                } catch (err) {
-                    showLogin();
-                }
-            } else {
-                showLogin();
-            }
-        });
-    </script>
+    <script src="app.js"></script>
 </body>
 </html>
